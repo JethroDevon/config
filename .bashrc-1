@@ -1,0 +1,241 @@
+#
+# ~/.bashrc
+#
+# Promt bar fun
+
+#---------------------------------------------------#
+#                                                   #
+#         HOW BOUT SOME COLOUR VARIABLES :D         #
+#                                                   #
+#---------------------------------------------------#
+
+
+#Set variables for foreground colors
+fgRed=$(tput setaf 1)     ; fgGreen=$(tput setaf 2)  ; fgBlue=$(tput setaf 4)
+fgMagenta=$(tput setaf 5) ; fgYellow=$(tput setaf 3) ; fgCyan=$(tput setaf 6)
+fgWhite=$(tput setaf 7)   ; fgBlack=$(tput setaf 0)
+#Set variables for background colors
+bgRed=$(tput setab 1)     ; bgGreen=$(tput setab 2)  ; bgBlue=$(tput setab 4)
+bgMagenta=$(tput setab 5) ; bgYellow=$(tput setab 3) ; bgCyan=$(tput setab 6)
+bgWhite=$(tput setab 7)   ; bgBlack=$(tput setab 0)
+#Set variables for font weight and text decoration
+B=$(tput bold) ; U=$(tput smul) ; C=$(tput sgr0)
+#NOTE: ${C} clears the current formatting
+
+
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
+shopt -s expand_aliases
+setxkbmap -layout gb
+
+export PS1="${fgRed}┌─────(${fgWhite}\w${fgRed}) \n${fgRed}└╸${fgWhite}"
+
+
+if [ -z ${DISPLAY:=""} ]; then
+    get_xserver
+    if [[ -z ${XSERVER}  || ${XSERVER} == $(hostname) ||
+       ${XSERVER} == "unix" ]]; then
+          DISPLAY=":0.0"          # Display on local host.
+    else
+       DISPLAY=${XSERVER}:0.0     # Display on remote host.
+    fi
+fi
+
+function get_xserver (){
+    
+    case $TERM in
+        xterm )
+            XSERVER=$(who am i | awk '{print $NF}' | tr -d ')''(' )
+            # Ane-Pieter Wieringa suggests the following alternative:
+            #  I_AM=$(who am i)
+            #  SERVER=${I_AM#*(}
+            #  SERVER=${SERVER%*)}
+            XSERVER=${XSERVER%%:*}
+            ;;
+            aterm | rxvt)
+            echo $XSERVER
+            ;;
+    esac
+}
+
+export DISPLAY
+export TERM=xterm
+case "$TERM" in xterm-color) color_prompt=yes;; esac
+
+
+#---------------------------------------------------#
+#                                                   #
+#                     MY ALIASES                    #
+#                                                   #
+#---------------------------------------------------#
+
+alias ls='ls --color=auto'
+alias addalias='source ~/.bashrc'
+alias aliases='emacs -nw ~/.bashrc'
+alias i3='emacs -nw ~/.config/i3/config'
+alias termite='sudo emacs -nw /etc/xdg/termite/config'
+alias i3bar='sudo emacs -nw /etc/i3status.conf'
+alias update='sudo pacman -Syyu'
+alias pac='sudo pacman -S'
+alias pearch='sudo pacman -Ss'
+alias msfconsole="msfconsole -x \"db_connect ${USER}@msf\""
+alias del='ded'
+alias rm='ded'
+alias empty='sudo rm -rf ~/.wasteman/*'
+alias bye='shutdown now'
+alias ismine='sudo chown firebunny'
+alias b="cd .."
+alias wifi="sudo wifi-menu"
+alias muttrc="sudo emacs .mutt/muttrc"
+alias clearwaste="sudo 'rm' -rf ~/.wasteman"
+alias downloadir='sudo wget --no-parent -r '
+#easy navigation
+alias downloads='cd ~/Downloads'
+alias documents='cd ~/Documents'
+alias arp='sudo arp-scan --interface=wlp2s0 --localnet'
+
+#blue team stuff
+alias snort-alert='sudo snort -desvl /opt/snort-2.9.11.1/etc/log -c /opt/snort-2.9.11.1/etc/snort.conf -i wlp2s0 -k none'
+
+# -D for SOCKS tunnel -f for fork -C for compression -N for no command
+alias firesocks='ssh -p 3456 -D 8123 -f -C -N firebunny@firebunny.org'
+
+# check ssh
+alias ssheck='ps aux | grep ssh'
+
+#OSCP STUFF
+alias school='evince ~/oscp/pwk-31251-313251.pdf &'
+alias searchsploit='/opt/exploit-database/searchsploit'
+alias dotdotpwn='sudo perl ~/dotdotpwn/dotdotpwn.pl'
+
+#oscp traversals
+alias oscp='cd ~/oscp'
+alias boxes='cd ~/oscp/boxes/ && ls'
+alias scans='cd ~/oscp/network-scans && ls'
+alias scripts='cd ~/oscp/scripts && ls'
+alias nc='sudo nc -nv'
+alias nse='sudo nmap --script'
+
+#argument is search term for nmap scripts
+alias nse-search='ls /usr/share/nmap/scripts | grep'
+
+function LAB() {
+
+    echo 10.11.1.$1
+}
+
+function box-nmap() {
+
+    cat /home/firebunny/oscp/network-scans/subnet-scan.gnmap | grep 10.11.1.$1 | tr ,\/ "\n"" "" "
+}
+
+function vid() {
+
+    string = $1;
+    vlc /home/firebunny/oscp/pwk-vids/$string
+}
+
+
+#go to box in directory using ip prefix only (ie: box 128)
+function box() {
+
+    cd ~/oscp/boxes/10.11.1."$@"
+}
+
+function box-notes() {
+
+    emacs ~/oscp/boxes/10.11.1."$@"/notes.tex
+}
+
+function box-cat() {
+
+    cat ~/oscp/boxes/10.11.1."$@"/notes.tex
+}
+
+#------------------------------------------------#
+#                                                #
+#          SMPWALK ENUMERATION FUNCTIONS         #
+#                                                #
+#------------------------------------------------#
+
+#output commands for mibs
+alias mibs='echo "
+System Processes = mibsp
+Running Programs = mibrp
+Processes Path = mibpp
+User Accounts = mibua
+Local Ports (TCP) = miblp"'
+
+#System Processes
+function mibsp() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.2.1.25.1.6.0
+}
+
+#Running Programs
+function mibrp() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.2.1.25.4.2.1.2
+}
+
+#Processes Path
+function mibpp() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.2.1.25.4.2.1.4
+}
+
+#Storage Units
+function mibsu() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.2.1.25.2.3.1.4
+}
+
+#Software Name
+function mibsn() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.2.1.25.6.3.1.2
+}
+
+#User Accounts
+function mibua() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.4.1.77.1.2.25
+}
+
+#TCP Local Ports
+function miblp() {
+
+    snmpwalk -c public -v1 $1 1.3.6.1.2.1.6.13.1.3
+}
+
+#----------------------------------------------------#
+
+#old name trying not to use it anymore
+function ded() {
+
+    sudo mv "$@" ~/.wasteman
+}
+
+#clone own repo
+function clone() {
+
+    sudo git clone https://github.com/JethroDevon/"$@".git
+}
+
+#scans an entire subnet, first arg is output file, second is IP third is netmask
+function scan-subnet() {
+
+    sudo nmap -oA "$1" "$2"/"$3"
+}
+
+#scans a range of IP addresses, first arg is output file, second is start IP third is end range
+function scan-range() {
+
+    sudo nmap -oA "$1" "$2"-"$3"
+}
+
+export PATH="$PATH:/opt/mssql-tools/bin:/usr/local/bin"
+
+/usr/bin/xmodmap ~/.Xmodmap
